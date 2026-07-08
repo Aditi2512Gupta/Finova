@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "454626261608",
+    "project_id": "finova-e6958",
+    "storage_bucket": "finova-e6958.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454626261608:android:f317965de6c3f10f3559dd",
+        "android_client_info": {
+          "package_name": "com.aditigupta.finova"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbzZMTZXvyFAAQpYmIV_iLAd7aKnzyqjo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
