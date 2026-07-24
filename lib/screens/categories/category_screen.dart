@@ -63,7 +63,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 24,
                 24,
                 24,
-                MediaQuery.of(context).viewInsets.bottom + 24,
+                MediaQuery.of(context).viewInsets.bottom +
+                    MediaQuery.of(context).padding.bottom +
+                    24,
               ),
               decoration: BoxDecoration(
                 color: themeProvider.surfaceColor,
@@ -72,214 +74,220 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   topRight: Radius.circular(32),
                 ),
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Add Custom Category",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: themeProvider.textPrimary,
-                        fontFamily: 'Outfit',
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Name
-                    TextField(
-                      controller: nameController,
-                      style: TextStyle(color: themeProvider.textPrimary),
-                      decoration: InputDecoration(
-                        labelText: "Category Name",
-                        labelStyle: TextStyle(
-                          color: themeProvider.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: themeProvider.backgroundColor,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Add Custom Category",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: themeProvider.textPrimary,
+                          fontFamily: 'Outfit',
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    // Type (Income/Expense)
-                    Row(
-                      children: [
-                        Text(
-                          "Type:  ",
-                          style: TextStyle(
-                            color: themeProvider.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        ChoiceChip(
-                          label: const Text("Expense"),
-                          selected: type == "Expense",
-                          selectedColor: themeProvider.primaryColor,
+                      // Name
+                      TextField(
+                        controller: nameController,
+                        style: TextStyle(color: themeProvider.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: "Category Name",
                           labelStyle: TextStyle(
-                            color: type == "Expense"
-                                ? Colors.white
-                                : themeProvider.textPrimary,
-                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textSecondary,
                           ),
-                          onSelected: (val) {
-                            if (val) setModalState(() => type = "Expense");
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        ChoiceChip(
-                          label: const Text("Income"),
-                          selected: type == "Income",
-                          selectedColor: themeProvider.primaryColor,
-                          labelStyle: TextStyle(
-                            color: type == "Income"
-                                ? Colors.white
-                                : themeProvider.textPrimary,
-                            fontWeight: FontWeight.bold,
+                          filled: true,
+                          fillColor: themeProvider.backgroundColor,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
                           ),
-                          onSelected: (val) {
-                            if (val) setModalState(() => type = "Income");
-                          },
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Color selection
-                    Text(
-                      "Theme Color",
-                      style: TextStyle(
-                        color: themeProvider.textPrimary,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: colorOptions.map((colVal) {
-                        final isSelected = selectedColorValue == colVal;
-                        return GestureDetector(
-                          onTap: () {
-                            setModalState(() => selectedColorValue = colVal);
-                          },
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: Color(colVal),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? themeProvider.textPrimary
-                                    : Colors.transparent,
-                                width: 2.5,
-                              ),
+                      const SizedBox(height: 20),
+
+                      // Type (Income/Expense)
+                      Row(
+                        children: [
+                          Text(
+                            "Type:  ",
+                            style: TextStyle(
+                              color: themeProvider.textPrimary,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Icon selection
-                    Text(
-                      "Category Icon",
-                      style: TextStyle(
-                        color: themeProvider.textPrimary,
-                        fontWeight: FontWeight.bold,
+                          ChoiceChip(
+                            label: const Text("Expense"),
+                            selected: type == "Expense",
+                            selectedColor: themeProvider.primaryColor,
+                            labelStyle: TextStyle(
+                              color: type == "Expense"
+                                  ? Colors.white
+                                  : themeProvider.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            onSelected: (val) {
+                              if (val) setModalState(() => type = "Expense");
+                            },
+                          ),
+                          const SizedBox(width: 12),
+                          ChoiceChip(
+                            label: const Text("Income"),
+                            selected: type == "Income",
+                            selectedColor: themeProvider.primaryColor,
+                            labelStyle: TextStyle(
+                              color: type == "Income"
+                                  ? Colors.white
+                                  : themeProvider.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            onSelected: (val) {
+                              if (val) setModalState(() => type = "Income");
+                            },
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 10,
-                      children: iconOptions.map((iconData) {
-                        final isSelected = selectedIcon == iconData;
-                        return GestureDetector(
-                          onTap: () {
-                            setModalState(() => selectedIcon = iconData);
-                          },
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Color(selectedColorValue).withOpacity(0.15)
-                                  : themeProvider.backgroundColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
+                      const SizedBox(height: 20),
+
+                      // Color selection
+                      Text(
+                        "Theme Color",
+                        style: TextStyle(
+                          color: themeProvider.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: colorOptions.map((colVal) {
+                          final isSelected = selectedColorValue == colVal;
+                          return GestureDetector(
+                            onTap: () {
+                              setModalState(() => selectedColorValue = colVal);
+                            },
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Color(colVal),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? themeProvider.textPrimary
+                                      : Colors.transparent,
+                                  width: 2.5,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Icon selection
+                      Text(
+                        "Category Icon",
+                        style: TextStyle(
+                          color: themeProvider.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 10,
+                        children: iconOptions.map((iconData) {
+                          final isSelected = selectedIcon == iconData;
+                          return GestureDetector(
+                            onTap: () {
+                              setModalState(() => selectedIcon = iconData);
+                            },
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? Color(
+                                        selectedColorValue,
+                                      ).withOpacity(0.15)
+                                    : themeProvider.backgroundColor,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Color(selectedColorValue)
+                                      : Colors.transparent,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Icon(
+                                iconData,
                                 color: isSelected
                                     ? Color(selectedColorValue)
-                                    : Colors.transparent,
-                                width: 1.5,
+                                    : themeProvider.textSecondary,
+                                size: 20,
                               ),
                             ),
-                            child: Icon(
-                              iconData,
-                              color: isSelected
-                                  ? Color(selectedColorValue)
-                                  : themeProvider.textSecondary,
-                              size: 20,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Save Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: themeProvider.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () async {
-                          final name = nameController.text.trim();
-                          if (name.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Please enter a category name"),
-                              ),
-                            );
-                            return;
-                          }
-
-                          final newCat = CategoryModel(
-                            id: const Uuid().v4(),
-                            name: name,
-                            type: type,
-                            color: selectedColorValue,
-                            icon: selectedIcon.codePoint,
-                            createdAt: Timestamp.now(),
                           );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 32),
 
-                          await _categoryService.addCategory(newCat);
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Custom Category added!"),
-                              ),
+                      // Save Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: themeProvider.primaryColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: () async {
+                            final name = nameController.text.trim();
+                            if (name.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please enter a category name"),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final newCat = CategoryModel(
+                              id: const Uuid().v4(),
+                              name: name,
+                              type: type,
+                              color: selectedColorValue,
+                              icon: selectedIcon.codePoint,
+                              createdAt: Timestamp.now(),
                             );
-                          }
-                        },
-                        child: const Text(
-                          "Add Category",
-                          style: TextStyle(fontWeight: FontWeight.bold),
+
+                            await _categoryService.addCategory(newCat);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Custom Category added!"),
+                                ),
+                              );
+                            }
+                          },
+                          child: const Text(
+                            "Add Category",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -291,23 +299,78 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   void _showBudgetDialog(CategoryModel category) {
     final controller = TextEditingController();
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: Text("Budget for ${category.name}"),
-          content: TextField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(hintText: "Enter monthly budget"),
+          backgroundColor: themeProvider.surfaceColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          title: Text(
+            "Budget for ${category.name}",
+            style: TextStyle(
+              color: themeProvider.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+              fontSize: 18,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Set a monthly limit for this category to track and control expenses.",
+                style: TextStyle(
+                  color: themeProvider.textSecondary,
+                  fontSize: 13,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: TextStyle(color: themeProvider.textPrimary),
+                decoration: InputDecoration(
+                  prefixText: "Rs. ",
+                  prefixStyle: TextStyle(
+                    color: themeProvider.primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  hintText: "0.00",
+                  hintStyle: TextStyle(color: themeProvider.textSecondary.withOpacity(0.5)),
+                  filled: true,
+                  fillColor: themeProvider.backgroundColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  color: themeProvider.textSecondary,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: themeProvider.primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () async {
                 final amount = double.tryParse(controller.text.trim());
 
@@ -324,7 +387,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   Navigator.pop(context);
                 }
               },
-              child: const Text("Save"),
+              child: const Text(
+                "Save",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ),
           ],
         );
@@ -479,9 +548,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            crossAxisSpacing: 14,
-                            mainAxisSpacing: 14,
-                            childAspectRatio: 1.6,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 2.15,
                           ),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
@@ -542,7 +611,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                 color: themeProvider.surfaceColor,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: catColor.withOpacity(0.35),
+                                  color: catColor.withOpacity(0.22),
                                   width: 1.5,
                                 ),
                                 boxShadow: [
@@ -554,15 +623,17 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                 ],
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                child: Row(
                                   children: [
                                     Container(
-                                      width: 34,
-                                      height: 34,
+                                      width: 36,
+                                      height: 36,
                                       decoration: BoxDecoration(
-                                        color: catColor.withOpacity(0.22),
+                                        color: catColor.withOpacity(0.12),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Center(
@@ -576,26 +647,40 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                         ),
                                       ),
                                     ),
-                                    const Spacer(),
-                                    Text(
-                                      cat.name,
-                                      style: TextStyle(
-                                        fontSize: 14.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: themeProvider.textPrimary,
-                                        fontFamily: 'Outfit',
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-
-                                    Text(
-                                      budget == null
-                                          ? "No Budget"
-                                          : "Budget ₹${budget.amount.toStringAsFixed(0)}",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: themeProvider.textSecondary,
-                                        fontWeight: FontWeight.w600,
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            cat.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: themeProvider.textPrimary,
+                                              fontFamily: 'Outfit',
+                                            ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            budget == null
+                                                ? "No Budget"
+                                                : "Rs. ${budget.amount.toStringAsFixed(0)}",
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: budget == null
+                                                  ? themeProvider.textSecondary
+                                                  : catColor,
+                                              fontWeight: FontWeight.w600,
+                                              fontFamily: 'Outfit',
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],

@@ -10,6 +10,8 @@ import '../../services/category_service.dart';
 import '../../models/transaction_model.dart';
 import '../../models/wallet_model.dart';
 import '../../models/category_model.dart';
+import '../../services/receipt_ai_service.dart';
+import '../../services/gemini_service.dart';
 
 class ReceiptScannerScreen extends StatefulWidget {
   const ReceiptScannerScreen({super.key});
@@ -27,6 +29,11 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
   final TransactionService _transactionService = TransactionService();
   final WalletService _walletService = WalletService();
   final CategoryService _categoryService = CategoryService();
+  final ReceiptAIService _receiptAI = ReceiptAIService();
+
+  final GeminiService _gemini = GeminiService();
+
+  String _ocrText = "";
 
   @override
   void initState() {
@@ -39,44 +46,111 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
 
   @override
   void dispose() {
+    _receiptAI.dispose();
     _scannerController.dispose();
     super.dispose();
   }
 
+  // Future<void> _pickImage(ImageSource source) async {
+  //   try {
+  //     final pickedFile = await _picker.pickImage(source: source);
+  //     if (pickedFile != null) {
+  //       setState(() {
+  //         _image = File(pickedFile.path);
+  //         _isScanning = true;
+  //       });
+  //       _runReceiptOCR();
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Error picking image: $e");
+  //   }
+  // }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final pickedFile = await _picker.pickImage(source: source);
-      if (pickedFile != null) {
-        setState(() {
-          _image = File(pickedFile.path);
-          _isScanning = true;
-        });
-        _runMockOCR();
+
+      if (pickedFile == null) {
+        return;
       }
-    } catch (e) {
-      debugPrint("Error picking image: $e");
+
+      setState(() {
+        _image = File(pickedFile.path);
+        _isScanning = true;
+      });
+
+      _runReceiptOCR();
+    } catch (e, stackTrace) {
+      debugPrint("IMAGE PICKER ERROR: $e");
+      debugPrint(stackTrace.toString());
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Camera Error: $e")));
+      }
     }
   }
 
-  void _runMockOCR() async {
-    // Simulate OCR processing time of 3.5 seconds
-    await Future.delayed(const Duration(milliseconds: 3500));
-    if (!mounted) return;
+  Future<void> _runReceiptOCR() async {
+    try {
+      final text = await _receiptAI.extractText(_image!);
+      _ocrText = text;
 
-    setState(() {
-      _isScanning = false;
-    });
+      if (text.trim().isEmpty) {
+        throw Exception(
+          "Couldn't detect any text.\nPlease capture a clearer receipt.",
+        );
+      }
 
-    // Mock OCR detected values
-    final detectedAmount = 1450.0;
-    final detectedMerchant = "Swiggy Delivery";
-    final detectedDate = DateTime.now();
+      final result = await _gemini.analyzeReceipt(text);
 
-    _showOCRResultDialog(detectedAmount, detectedMerchant, detectedDate);
+      int confidence = 0;
+
+      if ((result["merchant"] ?? "").toString().isNotEmpty) confidence += 25;
+
+      if ((result["amount"] ?? 0) != 0) confidence += 25;
+
+      if ((result["category"] ?? "").toString().isNotEmpty) confidence += 25;
+
+      if ((result["items"] ?? []).isNotEmpty) confidence += 25;
+
+      setState(() {
+        _isScanning = false;
+      });
+
+      _showOCRResultDialog(
+        (result["amount"] as num).toDouble(),
+        result["merchant"] ?? "Unknown Merchant",
+        DateTime.parse(result["date"]),
+        result["category"] ?? "Other",
+        List<String>.from(result["items"] ?? []),
+        result["paymentMethod"] ?? "Unknown",
+        confidence,
+      );
+    } catch (e) {
+      setState(() {
+        _isScanning = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Receipt scanning failed.\n${e.toString()}"),
+        ),
+      );
+    }
   }
 
   void _showOCRResultDialog(
-      double amount, String merchant, DateTime date) async {
+    double amount,
+    String merchant,
+    DateTime date,
+    String predictedCategory,
+    List<String> items,
+    String paymentMethod,
+    int confidence,
+  ) async {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     // Fetch wallets and categories for association
@@ -90,8 +164,19 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
     }
 
     String? selectedWalletId = wallets.isNotEmpty ? wallets.first.id : null;
-    String? selectedCategoryId =
-        categories.isNotEmpty ? categories.first.id : null;
+    String? selectedCategoryId;
+
+    if (categories.isNotEmpty) {
+      final match = categories.where(
+        (c) => c.name.toLowerCase() == predictedCategory.toLowerCase(),
+      );
+
+      if (match.isNotEmpty) {
+        selectedCategoryId = match.first.id;
+      } else {
+        selectedCategoryId = categories.first.id;
+      }
+    }
 
     if (!mounted) return;
 
@@ -106,21 +191,71 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28),
               ),
-              title: Row(
+              title: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.verified_rounded, color: Colors.green, size: 28),
-                  const SizedBox(width: 10),
-                  Text(
-                    "Receipt Scanned!",
-                    style: TextStyle(
-                      color: themeProvider.textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      fontFamily: 'Outfit',
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: Colors.green,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        "Receipt Scanned!",
+                        style: TextStyle(
+                          color: themeProvider.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: confidence >= 75
+                          ? Colors.green.withOpacity(0.15)
+                          : Colors.orange.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          confidence >= 75
+                              ? Icons.verified
+                              : Icons.warning_amber_rounded,
+                          color: confidence >= 75
+                              ? Colors.green
+                              : Colors.orange,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            confidence >= 75
+                                ? "High confidence extraction ($confidence%)"
+                                : "Please verify the extracted information ($confidence%)",
+                            style: TextStyle(
+                              color: themeProvider.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
+
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -136,15 +271,74 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
                     ),
                     const SizedBox(height: 20),
                     _buildOCRField("Merchant", merchant, themeProvider),
-                    _buildOCRField("Amount", "₹${amount.toStringAsFixed(2)}", themeProvider),
                     _buildOCRField(
-                        "Date",
-                        "${date.day}/${date.month}/${date.year}",
-                        themeProvider),
+                      "Amount",
+                      "₹${amount.toStringAsFixed(0)}",
+                      themeProvider,
+                    ),
+                    _buildOCRField(
+                      "Date",
+                      "${date.day}/${date.month}/${date.year}",
+                      themeProvider,
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    Divider(color: themeProvider.borderColor),
+
+                    const SizedBox(height: 14),
+
+                    Text(
+                      "Receipt Summary",
+                      style: TextStyle(
+                        color: themeProvider.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    _buildOCRField("Payment", paymentMethod, themeProvider),
+
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Items",
+                            style: TextStyle(
+                              color: themeProvider.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            items.isEmpty
+                                ? "No items detected"
+                                : items.map((e) => "• $e").join("\n"),
+                            style: TextStyle(color: themeProvider.textPrimary),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    ExpansionTile(
+                      title: const Text("View Extracted OCR Text"),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: SelectableText(_ocrText),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 16),
                     Divider(color: themeProvider.borderColor),
                     const SizedBox(height: 12),
-                    
+
                     // Wallet selection
                     Text(
                       "Select Wallet",
@@ -172,7 +366,9 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
                               value: w.id,
                               child: Text(
                                 w.name,
-                                style: TextStyle(color: themeProvider.textPrimary),
+                                style: TextStyle(
+                                  color: themeProvider.textPrimary,
+                                ),
                               ),
                             );
                           }).toList(),
@@ -213,7 +409,9 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
                               value: c.id,
                               child: Text(
                                 c.name,
-                                style: TextStyle(color: themeProvider.textPrimary),
+                                style: TextStyle(
+                                  color: themeProvider.textPrimary,
+                                ),
                               ),
                             );
                           }).toList(),
@@ -249,16 +447,22 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
                     ),
                   ),
                   onPressed: () async {
-                    if (selectedWalletId == null || selectedCategoryId == null) {
+                    if (selectedWalletId == null ||
+                        selectedCategoryId == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please select wallet and category")),
+                        const SnackBar(
+                          content: Text("Please select wallet and category"),
+                        ),
                       );
                       return;
                     }
 
                     // Save transaction to Firebase
                     final transaction = TransactionModel(
-                      id: FirebaseFirestore.instance.collection('users').doc().id,
+                      id: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc()
+                          .id,
                       title: merchant,
                       amount: amount,
                       type: 'Expense',
@@ -273,7 +477,7 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
                     );
 
                     await _transactionService.addTransaction(transaction);
-                    
+
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -382,7 +586,8 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
               animation: _scannerController,
               builder: (context, child) {
                 final height = MediaQuery.of(context).size.height;
-                final topOffset = _scannerController.value * (height * 0.7) + (height * 0.15);
+                final topOffset =
+                    _scannerController.value * (height * 0.7) + (height * 0.15);
                 return Positioned(
                   top: topOffset,
                   left: 16,
@@ -415,7 +620,9 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(themeProvider.primaryColor),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          themeProvider.primaryColor,
+                        ),
                       ),
                       const SizedBox(height: 24),
                       const Text(
@@ -478,74 +685,83 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen>
               bottom: 40,
               left: 24,
               right: 24,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Pick from gallery button
-                  IconButton(
-                    iconSize: 28,
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.15),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(16),
-                    ),
-                    icon: const Icon(Icons.photo_library_rounded),
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                  ),
-
-                  // Capture button
-                  GestureDetector(
-                    onTap: () => _pickImage(ImageSource.camera),
-                    child: Container(
-                      width: 76,
-                      height: 76,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 12,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Pick from gallery button
+                    IconButton(
+                      iconSize: 28,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.15),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
                       ),
+                      icon: const Icon(Icons.photo_library_rounded),
+                      onPressed: () => _pickImage(ImageSource.gallery),
+                    ),
+
+                    // Capture button
+                    GestureDetector(
+                      onTap: () => _pickImage(ImageSource.camera),
                       child: Container(
-                        margin: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white,
+                          border: Border.all(color: Colors.white, width: 4),
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // Guide/Help icon
-                  IconButton(
-                    iconSize: 28,
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.15),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(16),
-                    ),
-                    icon: const Icon(Icons.info_outline_rounded),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          backgroundColor: themeProvider.surfaceColor,
-                          title: Text(
-                            "Scanner Tips",
-                            style: TextStyle(color: themeProvider.textPrimary),
-                          ),
-                          content: Text(
-                            "Hold the receipt flat and capture it in bright lighting. The OCR scanner automatically reads the total amount, date, and items.",
-                            style: TextStyle(color: themeProvider.textSecondary),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("Got it"),
+                    // Guide/Help icon
+                    IconButton(
+                      iconSize: 28,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.15),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
+                      ),
+                      icon: const Icon(Icons.info_outline_rounded),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            backgroundColor: themeProvider.surfaceColor,
+                            title: Text(
+                              "Scanner Tips",
+                              style: TextStyle(
+                                color: themeProvider.textPrimary,
+                              ),
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                            content: Text(
+                              "Hold the receipt flat and capture it in bright lighting. The OCR scanner automatically reads the total amount, date, and items.",
+                              style: TextStyle(
+                                color: themeProvider.textSecondary,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("Got it"),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

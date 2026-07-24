@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/home/recent_transactions.dart';
 import '../../widgets/home/hero_balance_card.dart';
@@ -6,7 +7,10 @@ import '../../widgets/home/budget_progress.dart';
 import '../../widgets/home/home_header.dart';
 import '../../services/dashboard_service.dart';
 import '../../services/budget_service.dart';
-import '../../services/transaction_service.dart';
+import '../../services/ai_health_service.dart';
+import '../../widgets/home/financial_health_card.dart';
+import '../../services/ai_insights_service.dart';
+import '../../widgets/home/ai_insight_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,12 +22,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final DashboardService dashboardService = DashboardService();
   final BudgetService budgetService = BudgetService();
+  final AIHealthService _healthService = AIHealthService();
+  final AIInsightsService _insightService = AIInsightsService();
+  String? _aiInsight;
+  bool _isGeneratingInsight = false;
 
+  @override
   @override
   void initState() {
     super.initState();
-    // Run automated recurring transaction processor
-    TransactionService().processRecurringTransactions();
+    _loadAIInsights();
   }
 
   String getGreeting() {
@@ -47,6 +55,82 @@ class _HomeScreenState extends State<HomeScreen> {
       return Icons.wb_cloudy;
     } else {
       return Icons.nightlight_round;
+    }
+  }
+
+  Future<void> _loadAIInsights() async {
+    if (_isGeneratingInsight) return;
+
+    setState(() {
+      _isGeneratingInsight = true;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+
+    try {
+      final insight = await _insightService.getInsights();
+
+      await prefs.setString("cached_ai_insight", insight);
+
+      if (!mounted) return;
+
+      setState(() {
+        _aiInsight = insight.replaceAll("**", "").replaceAll("*", "");
+      });
+    } catch (e) {
+      debugPrint("AI Insight Error: $e");
+
+      final cached = prefs.getString("cached_ai_insight");
+
+      if (!mounted) return;
+
+      setState(() {
+        _aiInsight = cached;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingInsight = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshAIInsights() async {
+    if (_isGeneratingInsight) return;
+
+    setState(() {
+      _isGeneratingInsight = true;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+
+    try {
+      final insight = await _insightService.refreshInsights();
+
+      await prefs.setString("cached_ai_insight", insight);
+
+      if (!mounted) return;
+
+      setState(() {
+        _aiInsight = insight;
+      });
+    } catch (e) {
+      debugPrint("Refresh Insight Error: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Couldn't refresh AI insights. Please try again later.",
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingInsight = false;
+        });
+      }
     }
   }
 
@@ -76,6 +160,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     stream: budgetService.getBudget(),
                     builder: (context, budgetSnapshot) {
                       final budget = budgetSnapshot.data ?? 30000.0;
+                      final score = _healthService.calculateScore(
+                        income: income,
+                        expense: expense,
+                        completedGoals: 0,
+                        totalGoals: 0,
+                        exceededBudgets: expense > budget ? 1 : 0,
+                      );
+
+                      final label = _healthService.getHealthLabel(score);
+
+                      final suggestion = _healthService.getSuggestion(score);
 
                       return SafeArea(
                         child: Padding(
@@ -89,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const HomeHeader(),
 
                                 const SizedBox(height: 26),
-                                
+
                                 HeroBalanceCard(
                                   balance: balance,
                                   income: income,
@@ -98,15 +193,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                 const SizedBox(height: 28),
 
-                                BudgetProgress(
-                                  spent: expense,
-                                  budget: budget,
+                                BudgetProgress(spent: expense, budget: budget),
+
+                                const SizedBox(height: 24),
+
+                                FinancialHealthCard(
+                                  score: score,
+                                  label: label,
+                                  suggestion: suggestion,
                                 ),
 
                                 const SizedBox(height: 28),
 
                                 QuickActions(),
 
+                                const SizedBox(height: 28),
+
+                                if (_isGeneratingInsight)
+                                  const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                else if (_aiInsight != null)
+                                  AIInsightCard(
+                                    insight: _aiInsight!,
+                                    onRefresh: _refreshAIInsights,
+                                  )
+                                else
+                                  AIInsightCard(
+                                    insight:
+                                        "Nova couldn't generate today's insight. Tap Refresh or Ask Nova for personalized advice.",
+                                    onRefresh: _refreshAIInsights,
+                                  ),
                                 const SizedBox(height: 34),
 
                                 RecentTransactions(),

@@ -24,6 +24,22 @@ class CategoryService {
   // Migrate Old Category Icons
   // ============================
   CategoryModel _migrateCategory(CategoryModel category) {
+    const defaultCategoryIds = {
+      "food",
+      "travel",
+      "shopping",
+      "bills",
+      "salary",
+      "freelancing",
+      "gift",
+      "investment",
+      "savings",
+    };
+
+    if (!defaultCategoryIds.contains(category.id)) {
+      return category;
+    }
+    
     final lower = category.name.toLowerCase();
     int? targetColor;
     int? targetIcon;

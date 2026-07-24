@@ -30,8 +30,80 @@ class GeminiService {
 
       return data["candidates"][0]["content"]["parts"][0]["text"];
     } else {
-      throw Exception(response.body);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 429) {
+        throw Exception(
+          "Nova has reached today's AI request limit. Please try again tomorrow.",
+        );
+      }
+
+      throw Exception(data["error"]?["message"] ?? "Something went wrong.");
     }
+  }
+
+  Future<Map<String, dynamic>> analyzeReceipt(String receiptText) async {
+    final prompt =
+        """
+You are an AI receipt parser.
+
+Extract the following information from the receipt.
+
+Return ONLY valid JSON.
+
+Do NOT explain anything.
+
+Do NOT use markdown.
+
+Do NOT wrap the response inside ```.
+
+Fields:
+
+merchant
+amount
+category
+date
+items
+paymentMethod
+
+Rules:
+
+- amount must be the FINAL TOTAL on the receipt.
+- Ignore subtotal, tax and discounts.
+- category should be one word (Food, Shopping, Travel, Health, Bills, Education, Entertainment, Investment, Gift, Other).
+- paymentMethod should be Card, Cash, UPI or Unknown.
+- items should contain only purchased item names.
+- date format yyyy-mm-dd.
+- If date is missing, use today's date.
+
+Receipt:
+
+$receiptText
+
+Example:
+
+{
+  "merchant":"DMart",
+  "amount":470,
+  "category":"Food",
+  "date":"2026-07-09",
+  "paymentMethod":"Unknown",
+  "items":[
+    "Rice",
+    "Milk",
+    "Eggs"
+  ]
+}
+""";
+
+    final response = await askGemini(prompt);
+
+    final cleaned = response
+        .replaceAll("```json", "")
+        .replaceAll("```", "")
+        .trim();
+
+    return jsonDecode(cleaned);
   }
 
   Future<String> buildFinancialContext({

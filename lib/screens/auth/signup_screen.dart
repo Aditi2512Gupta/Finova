@@ -162,7 +162,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           keyboardType: TextInputType.name,
                           style: TextStyle(color: themeProvider.textPrimary),
                           decoration: InputDecoration(
-                            hintText: "e.g. Aditi Sharma",
+                            hintText: "e.g. Aditi Gupta",
                             hintStyle: TextStyle(
                               color: themeProvider.textSecondary.withOpacity(
                                 0.35,

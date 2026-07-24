@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/theme_provider.dart';
-import '../../models/category_model.dart';
-import '../../services/category_service.dart';
-import '../../services/budget_service.dart';
 import '../../models/budget_model.dart';
+import '../../models/category_model.dart';
+import '../../services/budget_service.dart';
+import '../../services/category_service.dart';
 
 class CategoryBudgetScreen extends StatefulWidget {
   const CategoryBudgetScreen({super.key});
@@ -116,7 +114,6 @@ class _CategoryBudgetScreenState extends State<CategoryBudgetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
       appBar: AppBar(

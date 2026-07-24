@@ -22,30 +22,38 @@ class MainNavigationScreen extends StatelessWidget {
       const ProfileScreen(),
     ];
 
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          pages[navProvider.currentIndex],
+    return PopScope(
+      canPop: navProvider.currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && navProvider.currentIndex != 0) {
+          navProvider.setTab(0);
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: Stack(
+          children: [
+            pages[navProvider.currentIndex],
 
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FinovaNavigation(
-              currentIndex: navProvider.currentIndex,
-              onChanged: (index) {
-                navProvider.setTab(index);
-              },
-              onAdd: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => const AddMenuSheet(),
-                );
-              },
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: FinovaNavigation(
+                currentIndex: navProvider.currentIndex,
+                onChanged: (index) {
+                  navProvider.setTab(index);
+                },
+                onAdd: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const AddMenuSheet(),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,19 +1,19 @@
-import 'package:month_year_picker/month_year_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:month_year_picker/month_year_picker.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/analytics_period.dart';
+import '../../models/budget_model.dart';
+import '../../models/category_model.dart';
+import '../../models/transaction_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/analytics_service.dart';
-import '../../models/transaction_model.dart';
-import '../../widgets/analytics/expense_pie_chart.dart';
-import '../../services/category_service.dart';
-import '../../widgets/analytics/income_expense_chart.dart';
-import '../../models/category_model.dart';
 import '../../services/budget_service.dart';
-import '../../models/analytics_period.dart';
+import '../../services/category_service.dart';
 import '../../widgets/analytics/analytics_summary_card.dart';
-import '../../models/budget_model.dart';
-import '../../models/analytics_summary.dart';
 import '../../widgets/analytics/budget_alerts_card.dart';
+import '../../widgets/analytics/expense_pie_chart.dart';
+import '../../widgets/analytics/income_expense_chart.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -233,7 +233,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                   onTap: () async {
                     Navigator.pop(context);
-                    print("Custom Month clicked");
 
                     final picked = await showMonthYearPicker(
                       context: context,
@@ -562,16 +561,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       });
       index++;
     });
-
-    // Default mock item if empty
-    if (budgetItems.length == 1) {
-      budgetItems.add({
-        'name': 'Groceries',
-        'spent': 2300.0,
-        'limit': 4000.0,
-        'color': const Color(0xFF8B5CF6),
-      });
-    }
 
     return Container(
       padding: const EdgeInsets.all(20),

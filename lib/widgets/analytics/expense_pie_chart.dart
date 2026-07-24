@@ -63,8 +63,6 @@ class ExpensePieChart extends StatelessWidget {
       const Color(0xFF5F27CD), // Deep Purple
     ];
 
-    int index = 0;
-    
     // Sort categories by amount descending
     final sortedEntries = categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));

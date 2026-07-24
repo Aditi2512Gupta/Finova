@@ -295,7 +295,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       controller: titleController,
                       style: TextStyle(color: themeProvider.textPrimary),
                       decoration: InputDecoration(
-                        hintText: "e.g. Weekly Groceries",
+                        hintText: "e.g. Weekly Groceries / Salary",
                         hintStyle: TextStyle(color: themeProvider.textSecondary.withOpacity(0.35)),
                         prefixIcon: Icon(Icons.edit_note_rounded, color: themeProvider.textSecondary, size: 20),
                         filled: true,

@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/transaction_model.dart';
-import 'notification_service.dart';
 import 'budget_service.dart';
 import 'category_service.dart';
 import 'notification_service.dart';
@@ -58,7 +58,9 @@ class TransactionService {
       );
 
       firebaseTransaction.update(walletRef, {"balance": updatedBalance});
+      
     });
+
     await _checkBudgetAlert(transaction);
     await _checkLowWalletBalance(transaction);
   }
@@ -418,27 +420,40 @@ class TransactionService {
   }
 
   Future<void> checkUpcomingRecurringReminders() async {
-    final now = DateTime.now();
+  final prefs = await SharedPreferences.getInstance();
 
-    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+  final now = DateTime.now();
+  final tomorrow = DateTime(now.year, now.month, now.day + 1);
 
-    final transactions = await getTransactions().first;
+  final transactions = await getTransactions().first;
 
-    for (final t in transactions) {
-      if (!t.isRecurring || t.nextOccurrence == null) {
+  for (final t in transactions) {
+    if (!t.isRecurring || t.nextOccurrence == null) {
+      continue;
+    }
+
+    final next = t.nextOccurrence!;
+
+    if (next.year == tomorrow.year &&
+        next.month == tomorrow.month &&
+        next.day == tomorrow.day) {
+
+      final reminderKey =
+          "upcoming_${t.id}_${tomorrow.year}_${tomorrow.month}_${tomorrow.day}";
+
+      final alreadyShown = prefs.getBool(reminderKey) ?? false;
+
+      if (alreadyShown) {
         continue;
       }
 
-      final next = t.nextOccurrence!;
+      await NotificationService.instance.showUpcomingRecurringReminder(
+        title: t.title,
+        amount: t.amount,
+      );
 
-      if (next.year == tomorrow.year &&
-          next.month == tomorrow.month &&
-          next.day == tomorrow.day) {
-        await NotificationService.instance.showUpcomingRecurringReminder(
-          title: t.title,
-          amount: t.amount,
-        );
-      }
+      await prefs.setBool(reminderKey, true);
     }
   }
+}
 }

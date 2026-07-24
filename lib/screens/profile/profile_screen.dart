@@ -5,6 +5,7 @@ import '../../providers/theme_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/budget_service.dart';
 import '../../services/firestore_service.dart';
+import '../../services/ai_health_service.dart';
 import '../../models/user_model.dart';
 import '../categories/category_screen.dart';
 import '../ai/ai_coach_screen.dart';
@@ -316,7 +317,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "Select your preferred format to export all transaction records from Firestore:",
+                "Export your complete transaction history in your preferred format.",
                 style: TextStyle(
                   color: themeProvider.textSecondary,
                   fontSize: 14,
@@ -415,10 +416,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final transactions = await _transactionService.getTransactions().first;
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? "";
+      final userModel = await _firestoreService.getUser(uid);
+
+      final totalIncome = transactions
+          .where((t) => t.type == "Income")
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final totalExpense = transactions
+          .where((t) => t.type == "Expense")
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final budgetLimit = await BudgetService().getBudget().first;
+
+      final healthScore = AIHealthService().calculateScore(
+        income: totalIncome,
+        expense: totalExpense,
+        completedGoals: 0,
+        totalGoals: 0,
+        exceededBudgets: totalExpense > budgetLimit ? 1 : 0,
+      );
 
       if (mounted) Navigator.pop(context);
 
-      await _exportService.exportPDF(transactions: transactions);
+      await _exportService.sharePDF(
+        transactions: transactions,
+        themePrimaryColor: themeProvider.primaryColor,
+        userName: userModel.name,
+        financialHealthScore: healthScore,
+      );
     } catch (e) {
       if (mounted) Navigator.pop(context);
 
@@ -614,19 +638,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     _buildMenuItem(
                       context,
-                      icon: Icons.smart_toy_outlined,
-                      title: "AI Coaching Insights",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AICoachScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildMenuItem(
-                      context,
                       icon: Icons.category_outlined,
                       title: "Categories Management",
                       onTap: () {
@@ -726,6 +737,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
 
+                const SizedBox(height: 18),
                 // Logout Group
                 _buildMenuGroup(
                   themeProvider,

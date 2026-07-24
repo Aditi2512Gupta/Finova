@@ -55,15 +55,27 @@ class _RecentTransactionsState extends State<RecentTransactions> {
   IconData _getCategoryIcon(String? categoryName) {
     if (categoryName == null) return Icons.payment_rounded;
     final lower = categoryName.toLowerCase();
-    if (lower.contains("food") || lower.contains("swiggy") || lower.contains("restaurant") || lower.contains("dine")) {
+    if (lower.contains("food") ||
+        lower.contains("swiggy") ||
+        lower.contains("restaurant") ||
+        lower.contains("dine")) {
       return Icons.restaurant_rounded;
-    } else if (lower.contains("salary") || lower.contains("income") || lower.contains("pay")) {
+    } else if (lower.contains("salary") ||
+        lower.contains("income") ||
+        lower.contains("pay")) {
       return Icons.payments_rounded;
-    } else if (lower.contains("shopping") || lower.contains("clothes") || lower.contains("store")) {
+    } else if (lower.contains("shopping") ||
+        lower.contains("clothes") ||
+        lower.contains("store")) {
       return Icons.shopping_bag_rounded;
-    } else if (lower.contains("bill") || lower.contains("recharge") || lower.contains("electricity")) {
+    } else if (lower.contains("bill") ||
+        lower.contains("recharge") ||
+        lower.contains("electricity")) {
       return Icons.receipt_rounded;
-    } else if (lower.contains("travel") || lower.contains("cab") || lower.contains("taxi") || lower.contains("uber")) {
+    } else if (lower.contains("travel") ||
+        lower.contains("cab") ||
+        lower.contains("taxi") ||
+        lower.contains("uber")) {
       return Icons.local_taxi_rounded;
     } else if (lower.contains("education") || lower.contains("school")) {
       return Icons.school_rounded;
@@ -149,18 +161,30 @@ class _RecentTransactionsState extends State<RecentTransactions> {
             final transactions = snapshot.data ?? [];
 
             if (transactions.isEmpty) {
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                decoration: BoxDecoration(
-                  color: themeProvider.surfaceColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: themeProvider.borderColor),
-                ),
-                child: Center(
-                  child: Text(
-                    "No recent transactions",
-                    style: TextStyle(color: themeProvider.textSecondary, fontFamily: 'Outfit'),
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 30),
+                  child: Column(
+                    children: const [
+                      Icon(
+                        Icons.receipt_long_rounded,
+                        size: 60,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        "No transactions yet",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        "Your expenses and income will appear here.",
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -177,8 +201,12 @@ class _RecentTransactionsState extends State<RecentTransactions> {
                 final isIncome = transaction.type == "Income";
                 final category = categoryMap[transaction.categoryId];
                 final categoryName = category?.name ?? "General";
-                final catColor = category != null ? Color(category.color) : _getCategoryColor(categoryName);
-                final catIcon = category != null ? IconData(category.icon, fontFamily: 'MaterialIcons') : _getCategoryIcon(categoryName);
+                final catColor = category != null
+                    ? Color(category.color)
+                    : _getCategoryColor(categoryName);
+                final catIcon = category != null
+                    ? IconData(category.icon, fontFamily: 'MaterialIcons')
+                    : _getCategoryIcon(categoryName);
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -206,11 +234,7 @@ class _RecentTransactionsState extends State<RecentTransactions> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Center(
-                          child: Icon(
-                            catIcon,
-                            color: catColor,
-                            size: 20,
-                          ),
+                          child: Icon(catIcon, color: catColor, size: 20),
                         ),
                       ),
                       const SizedBox(width: 14),

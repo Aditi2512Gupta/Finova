@@ -1,9 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../../services/transaction_service.dart';
 import '../../widgets/logo_widget.dart';
 import '../auth/auth_wrapper.dart';
-import '../../services/transaction_service.dart';
-import '../../services/notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

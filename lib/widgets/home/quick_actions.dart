@@ -1,123 +1,245 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/theme_provider.dart';
 import '../../screens/transactions/add_transaction_screen.dart';
 import '../../screens/receipt/receipt_scanner_screen.dart';
 import '../../services/transaction_service.dart';
+import '../../services/export_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/ai_health_service.dart';
+import '../../services/budget_service.dart';
 
 class QuickActions extends StatelessWidget {
   const QuickActions({super.key});
 
-  void _runMockPDFExportProcess(BuildContext context) async {
+  Future<void> _previewPDF(BuildContext context) async {
+    final exportService = ExportService();
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
-    // Show Loading Progress Modal
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: themeProvider.surfaceColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 12),
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Generating PDF Report...",
-                    style: TextStyle(color: themeProvider.textPrimary, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Analyzing records & compiling PDF layout...",
-                    style: TextStyle(color: themeProvider.textSecondary, fontSize: 12),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    String savedFilePath = "";
-    bool success = false;
 
     try {
       final transactions = await TransactionService().getTransactions().first;
-      double totalIncome = 0;
-      double totalExpense = 0;
-      
-      final reportBuffer = StringBuffer();
-      reportBuffer.writeln("==================================================");
-      reportBuffer.writeln("             FINOVA FINANCIAL REPORT              ");
-      reportBuffer.writeln("==================================================");
-      reportBuffer.writeln("Generated on: ${DateTime.now().toLocal().toString()}");
-      reportBuffer.writeln("\nTRANSACTION SUMMARY:");
-      
-      for (var t in transactions) {
-        if (t.type == "Income") {
-          totalIncome += t.amount;
-        } else {
-          totalExpense += t.amount;
-        }
-        reportBuffer.writeln("[${t.type}] ${t.title}: ₹${t.amount.toStringAsFixed(2)} on ${t.date.day}/${t.date.month}/${t.date.year}");
-      }
-      
-      reportBuffer.writeln("\n--------------------------------------------------");
-      reportBuffer.writeln("TOTAL INCOME:  ₹${totalIncome.toStringAsFixed(2)}");
-      reportBuffer.writeln("TOTAL EXPENSE: ₹${totalExpense.toStringAsFixed(2)}");
-      reportBuffer.writeln("NET SAVINGS:   ₹${(totalIncome - totalExpense).toStringAsFixed(2)}");
-      reportBuffer.writeln("==================================================");
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? "";
+      final userModel = await FirestoreService().getUser(uid);
 
-      final String? userHome = Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'];
-      if (userHome != null) {
-        final fileName = "finova_financial_report_${DateTime.now().millisecondsSinceEpoch}.txt"; // Text representation of PDF for dynamic local writing
-        final downloadsDir = Directory("$userHome\\Downloads");
-        if (await downloadsDir.exists()) {
-          final file = File("${downloadsDir.path}\\$fileName");
-          await file.writeAsString(reportBuffer.toString());
-          savedFilePath = file.path;
-          success = true;
-        } else {
-          final docsDir = Directory("$userHome\\Documents");
-          if (await docsDir.exists()) {
-            final file = File("${docsDir.path}\\$fileName");
-            await file.writeAsString(reportBuffer.toString());
-            savedFilePath = file.path;
-            success = true;
-          }
-        }
-      }
+      final totalIncome = transactions
+          .where((t) => t.type == "Income")
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final totalExpense = transactions
+          .where((t) => t.type == "Expense")
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final budgetLimit = await BudgetService().getBudget().first;
+
+      final healthScore = AIHealthService().calculateScore(
+        income: totalIncome,
+        expense: totalExpense,
+        completedGoals: 0,
+        totalGoals: 0,
+        exceededBudgets: totalExpense > budgetLimit ? 1 : 0,
+      );
+
+      await exportService.previewPDF(
+        transactions: transactions,
+        themePrimaryColor: themeProvider.primaryColor,
+        userName: userModel.name,
+        financialHealthScore: healthScore,
+      );
     } catch (e) {
-      debugPrint("PDF generation error: $e");
-    }
+      debugPrint(e.toString());
 
-    await Future.delayed(const Duration(milliseconds: 1500));
-
-    if (context.mounted) {
-      Navigator.pop(context); // Close progress dialog
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("PDF Export completed successfully! Saved to:\n$savedFilePath"),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Failed to export PDF file."),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Failed to export PDF.")));
       }
     }
+  }
+
+  Future<void> _sharePDF(BuildContext context) async {
+    final exportService = ExportService();
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    try {
+      final transactions = await TransactionService().getTransactions().first;
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? "";
+      final userModel = await FirestoreService().getUser(uid);
+
+      final totalIncome = transactions
+          .where((t) => t.type == "Income")
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final totalExpense = transactions
+          .where((t) => t.type == "Expense")
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final budgetLimit = await BudgetService().getBudget().first;
+
+      final healthScore = AIHealthService().calculateScore(
+        income: totalIncome,
+        expense: totalExpense,
+        completedGoals: 0,
+        totalGoals: 0,
+        exceededBudgets: totalExpense > budgetLimit ? 1 : 0,
+      );
+
+      await exportService.sharePDF(
+        transactions: transactions,
+        themePrimaryColor: themeProvider.primaryColor,
+        userName: userModel.name,
+        financialHealthScore: healthScore,
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Failed to export PDF.")));
+      }
+    }
+  }
+
+  Widget _optionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    required ThemeProvider theme,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.borderColor),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: color, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: theme.textPrimary,
+                            fontFamily: 'Outfit',
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.textSecondary,
+                            fontFamily: 'Outfit',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: theme.textSecondary.withOpacity(0.4),
+                    size: 14,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showExportOptions(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: themeProvider.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: themeProvider.borderColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Text(
+                  "Export PDF",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.textPrimary,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                _optionCard(
+                  title: "Preview PDF",
+                  subtitle: "View statement layout before saving",
+                  icon: Icons.visibility_rounded,
+                  color: themeProvider.primaryColor,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _previewPDF(context);
+                  },
+                  theme: themeProvider,
+                ),
+
+                _optionCard(
+                  title: "Share / Save PDF",
+                  subtitle: "Export via WhatsApp, Google Drive, Files...",
+                  icon: Icons.share_rounded,
+                  color: const Color(0xFF8B5CF6), // Purple accent
+                  onTap: () {
+                    Navigator.pop(context);
+                    _sharePDF(context);
+                  },
+                  theme: themeProvider,
+                ),
+
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -156,7 +278,8 @@ class QuickActions extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const AddTransactionScreen(initialType: "Expense"),
+                    builder: (_) =>
+                        const AddTransactionScreen(initialType: "Expense"),
                   ),
                 );
               },
@@ -170,7 +293,8 @@ class QuickActions extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const AddTransactionScreen(initialType: "Income"),
+                    builder: (_) =>
+                        const AddTransactionScreen(initialType: "Income"),
                   ),
                 );
               },
@@ -194,7 +318,7 @@ class QuickActions extends StatelessWidget {
               title: "Export PDF",
               icon: Icons.picture_as_pdf_rounded,
               color: const Color(0xFF8B5CF6),
-              onTap: () => _runMockPDFExportProcess(context),
+              onTap: () => _showExportOptions(context),
             ),
           ],
         ),
@@ -236,9 +360,7 @@ class QuickActions extends StatelessWidget {
                 color: color.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
-              child: Center(
-                child: Icon(icon, color: color, size: 18),
-              ),
+              child: Center(child: Icon(icon, color: color, size: 18)),
             ),
             const SizedBox(width: 10),
             Expanded(

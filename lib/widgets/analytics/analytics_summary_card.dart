@@ -25,9 +25,9 @@ class AnalyticsDashboardSummary extends StatelessWidget {
     );
 
     // Styling configurations
-    final savingsChangeColor = summary.savingsChange >= 0
-        ? const Color(0xFF10B981) // Green
-        : const Color(0xFFEF4444); // Red
+    // final savingsChangeColor = summary.savingsChange >= 0
+    //     ? const Color(0xFF10B981) // Green
+    //     : const Color(0xFFEF4444); // Red
 
     final incomeChangeColor = summary.incomeChange >= 0
         ? const Color(0xFF10B981)
