@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # finova
 
 A new Flutter project.
@@ -15,3 +16,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# Finova
+AI-Powered Personal Finance Management App built using Flutter, Firebase &amp; Gemini AI.
+>>>>>>> 003d156a01d75854a13c190223b3cace96cf3da7
