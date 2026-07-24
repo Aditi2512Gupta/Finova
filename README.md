@@ -25,3 +25,154 @@ Managing personal finances shouldn't be complicated.
 Built with **Flutter** and **Firebase**, Finova focuses on delivering a premium user experience with modern UI, smooth performance, and intelligent financial insights.
 
 ---
+
+# ✨ Features
+
+## 🤖 AI-Powered with Nova
+- Smart financial insights powered by **Google Gemini AI**
+- Personalized spending analysis
+- AI-generated financial recommendations
+- Financial Health Score
+- AI-powered receipt scanning
+
+---
+
+## 💰 Expense Management
+- Add income and expense transactions
+- Custom transaction categories
+- Category-wise budget management
+- Multiple wallet support
+- Real-time balance tracking
+
+---
+
+## 📊 Analytics & Insights
+- Interactive expense analytics
+- Category-wise spending breakdown
+- Budget progress tracking
+- Monthly financial overview
+- Recent transaction history
+
+---
+
+## 🔐 Secure Authentication
+- Email & Password Sign Up
+- Secure Login
+- Password Reset
+- Firebase Authentication
+
+---
+
+## 🎨 Modern User Experience
+- Beautiful Material 3 UI
+- Dark & Light Theme
+- Smooth animations
+- Responsive layouts
+- Premium dashboard design
+
+---
+
+# 🛠 Tech Stack
+
+| Category | Technologies |
+|-----------|--------------|
+| Framework | Flutter |
+| Language | Dart |
+| Backend | Firebase |
+| Database | Cloud Firestore |
+| Authentication | Firebase Authentication |
+| Storage | Firebase Storage |
+| AI | Google Gemini AI |
+| State Management | Provider |
+| Charts | fl_chart |
+| Local Storage | SharedPreferences |
+
+---
+
+# 📱 Screenshots
+
+> Screenshots will be added soon.
+
+| Home | Analytics |
+|------|-----------|
+| Coming Soon | Coming Soon |
+
+| AI Insights | Profile |
+|-------------|---------|
+| Coming Soon | Coming Soon |
+
+---
+
+# 🏗 Architecture
+
+```text
+                Flutter App
+                     │
+         ┌───────────┴───────────┐
+         │                       │
+     Firebase               Gemini AI
+         │                       │
+ ┌───────┼────────┐              │
+ │       │        │              │
+Auth  Firestore Storage      Nova AI
+ │       │        │              │
+ └───────┴────────┴──────────────┘
+                │
+          Finova Dashboard
+```
+
+---
+
+# 📂 Project Structure
+
+```text
+lib
+├── models
+├── providers
+├── screens
+├── services
+├── widgets
+└── main.dart
+```
+
+---
+
+## 🚀 Run Locally
+
+```bash
+git clone https://github.com/Aditi2512Gupta/Finova.git
+cd Finova
+flutter pub get
+flutter run
+```
+
+---
+
+# 🛣 Roadmap
+
+- Voice-based expense entry
+- Investment portfolio tracking
+- Bank account synchronization
+- Recurring transaction automation
+- Family/shared wallets
+- Web support
+- Desktop support
+
+---
+
+# 👩‍💻 Developer
+
+**Aditi Gupta**
+
+- 💼 Flutter Developer
+- 🎓 B.Tech CS Student
+- 📍 India
+
+### Connect with me
+
+- GitHub: https://github.com/Aditi2512Gupta
+- LinkedIn: https://www.linkedin.com/in/aditi-gupta-b8b49b329
+
+---
+
+⭐ If you like this project, consider giving it a star!
