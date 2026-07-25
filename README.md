@@ -53,6 +53,9 @@ Built with **Flutter** and **Firebase**, Finova focuses on delivering a premium 
 - Budget progress tracking
 - Monthly financial overview
 - Recent transaction history
+- Generate and preview financial reports as PDF
+- Share & Save PDF reports
+- Export transaction data as CSV
 
 ---
 
