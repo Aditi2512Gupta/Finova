@@ -89,20 +89,6 @@ Built with **Flutter** and **Firebase**, Finova focuses on delivering a premium 
 
 ---
 
-# 📱 Screenshots
-
-> Screenshots will be added soon.
-
-| Home | Analytics |
-|------|-----------|
-| Coming Soon | Coming Soon |
-
-| AI Insights | Profile |
-|-------------|---------|
-| Coming Soon | Coming Soon |
-
----
-
 # 🏗 Architecture
 
 ```text
