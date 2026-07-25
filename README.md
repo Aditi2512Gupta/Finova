@@ -139,7 +139,6 @@ flutter run
 - Voice-based expense entry
 - Investment portfolio tracking
 - Bank account synchronization
-- Recurring transaction automation
 - Family/shared wallets
 - Web support
 - Desktop support
