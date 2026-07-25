@@ -43,6 +43,7 @@ Built with **Flutter** and **Firebase**, Finova focuses on delivering a premium 
 - Category-wise budget management
 - Multiple wallet support
 - Real-time balance tracking
+- Recurring transaction automation
 
 ---
 
